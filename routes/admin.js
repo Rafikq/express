@@ -1,9 +1,51 @@
 const express = require('express');
 const router = express.Router();
+const News = require('../models/news');
+
+router.all('*', (req, res, next) => {
+  if (!req.session.admin) {
+    res.redirect('login');
+    return;
+  }
+  next();
+});
 
 /* GET home page.*/
 router.get('/', (req, res) => {
-  res.render('admin', { title: 'Admin' }); // views/index.pug
+  News.find({}, (err, data) => {
+    res.render('admin/index', { title: 'Admin', data });
+  });
 });
+
+router.get('/news/add', (req, res) => {
+  res.render('admin/news-form', { title: 'Dodaj news' });
+})
+
+router.post('/news/add', (req, res) => {
+  const body = req.body;
+  const newsData = new News({
+    title: body.title,
+    description: body.description
+  });
+
+  const errors = newsData.validateSync();
+
+
+  newsData.save(err => {
+    if (err) {
+      res.render('admin/news-form', { title: 'Doaj news', errors });
+      return;
+    }
+
+    res.redirect('/admin');
+  });
+
+})
+
+router.get('/news/delete/:id', (req, res) => {
+  News.findByIdAndDelete(req.params.id, (err) => {
+    res.redirect('/admin');
+  })
+})
 
 module.exports = router;
